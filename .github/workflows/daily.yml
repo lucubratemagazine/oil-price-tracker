@@ -2,12 +2,12 @@ name: Daily
 
 on:
   schedule:
-      - cron: "0 6 * * *"
-    workflow_dispatch:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
 
-  jobs:
-    update-data:
-      name: Update oil price data
+jobs:
+  update-data:
+    name: Update oil price data
     runs-on: ubuntu-latest
 
     steps:
