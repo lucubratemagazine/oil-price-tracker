@@ -10,9 +10,8 @@ jobs:
     name: Update oil price data
     runs-on: ubuntu-latest
 
-
     steps:
-           - name: Check out repository
+      - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -31,8 +30,9 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add history.csv oil_price_chart.png
-          git commit -m "Update data" || echo "No changes to commit"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add history.csv chart.png
+          git commit -m "Update oil price data" || echo "No changes"
           git push
+
