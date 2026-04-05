@@ -35,4 +35,3 @@ jobs:
           git add history.csv chart.png
           git commit -m "Update oil price data" || echo "No changes"
           git push
-
