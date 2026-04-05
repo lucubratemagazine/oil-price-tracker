@@ -10,6 +10,7 @@ jobs:
     name: Update oil price data
     runs-on: ubuntu-latest
 
+
     steps:
            - name: Check out repository
         uses: actions/checkout@v4
