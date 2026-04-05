@@ -39,4 +39,4 @@ jobs:
         run: |
           git add history.csv chart.png
           git commit -m "Update oil price data" || echo "No changes"
-          git push
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
