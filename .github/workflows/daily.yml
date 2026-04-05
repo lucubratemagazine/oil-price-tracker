@@ -10,7 +10,6 @@ on:
 
 jobs:
   update-data:
-    name: Update oil price data
     runs-on: ubuntu-latest
 
     steps:
@@ -31,10 +30,13 @@ jobs:
       - name: Generate chart
         run: python generate_chart.py
 
-      - name: Commit and push changes
+      - name: Configure Git
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
+
+      - name: Commit and push changes
+        run: |
           git add history.csv chart.png
           git commit -m "Update oil price data" || echo "No changes"
           git push
