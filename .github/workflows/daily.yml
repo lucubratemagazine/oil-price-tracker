@@ -2,11 +2,12 @@ name: Daily
 
 on:
   schedule:
-    - cron: "0 6 * * *"   # Kjør hver dag kl 06:00 UTC
-  workflow_dispatch:       # Lar deg kjøre manuelt
+    - cron: "0 6 * * *"
+  workflow_dispatch:
 
 jobs:
   update-data:
+    name: Update oil price data
     runs-on: ubuntu-latest
 
     steps:
