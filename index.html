@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Oil Price Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f7f7f7;
+        }
+        h1 {
+            text-align: center;
+        }
+        .price-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.4rem;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        img {
+            width: 100%;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Oil Price Tracker</h1>
+
+<div class="price-box">
+    <strong>Latest price:</strong>
+    <span id="latest-price">Loading...</span>
+</div>
+
+<h2>Historical Chart</h2>
+<img src="chart.png" alt="Oil price chart">
+
+<script>
+    async function loadLatestPrice() {
+        const response = await fetch("history.csv");
+        const text = await response.text();
+        const lines = text.trim().split("\n");
+        const last = lines[lines.length - 1].split(",");
+        const date = last[0];
+        const price = last[1];
+        document.getElementById("latest-price").textContent = `${price} USD (${date})`;
+    }
+    loadLatestPrice();
+</script>
+
+</body>
+</html>
