@@ -3,207 +3,221 @@
 <head>
     <meta charset="UTF-8">
     <title>Oil Price Tracker</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 
     <style>
         :root {
-            --bg: #f7f7f7;
-            --text: #111;
-            --card-bg: #fff;
+            --bg: #ffffff;
+            --text: #111111;
+            --card-bg: #f5f5f5;
             --accent: #4da3ff;
-            --up: #4caf50;
-            --down: #ff5252;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #121212;
-                --text: #eaeaea;
-                --card-bg: #1e1e1e;
-            }
         }
 
         body.dark {
-            --bg: #121212;
-            --text: #eaeaea;
+            --bg: #111111;
+            --text: #f5f5f5;
             --card-bg: #1e1e1e;
+            --accent: #4da3ff;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 20px;
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background: var(--bg);
             color: var(--text);
-            transition: background 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1.5rem;
         }
 
         h1 {
-            text-align: center;
-            margin-bottom: 10px;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
         }
 
-        .toggle {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .toggle button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
+        button {
             background: var(--accent);
-            color: white;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
-        .price-box {
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .card {
             background: var(--card-bg);
-            padding: 20px;
-            border-radius: 10px;
-            font-size: 1.4rem;
-            margin-bottom: 30px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
         }
 
-        #change {
-            font-size: 1.2rem;
-            margin-top: 5px;
+        #chart {
+            width: 100%;
+            height: 400px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 25px;
+            margin-top: 1rem;
+            font-size: 0.85rem;
         }
 
         th, td {
-            padding: 8px;
-            border-bottom: 1px solid #444;
+            padding: 0.35rem 0.5rem;
+            border-bottom: 1px solid #ccc;
         }
 
         th {
-            background: var(--card-bg);
+            text-align: left;
         }
     </style>
 </head>
 <body>
+<div class="container">
+    <h1>Oil Price Tracker</h1>
+    <button id="toggle-theme">Toggle Dark Mode</button>
 
-<h1>Oil Price Tracker</h1>
+    <div class="card">
+        <strong>Latest price:</strong>
+        <span id="latest-price">Loading...</span>
+    </div>
 
-<div class="toggle">
-    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+    <h2>Interactive Historical Chart</h2>
+    <div id="chart"></div>
+
+    <h3>History</h3>
+    <table id="table">
+        <thead>
+        <tr>
+            <th>Date</th>
+            <th>Price (USD)</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 </div>
-
-<div class="price-box">
-    <strong>Latest price:</strong>
-    <div id="latest-price">Loading...</div>
-    <div id="change"></div>
-</div>
-
-<h2>Interactive Historical Chart</h2>
-<div id="chart" style="height: 450px;"></div>
-
-<h2>Historical Data</h2>
-<table id="table">
-    <thead>
-        <tr><th>Date</th><th>Price (USD)</th></tr>
-    </thead>
-    <tbody></tbody>
-</table>
 
 <script>
-    function toggleDarkMode() {
-        document.body.classList.toggle("dark");
+    // Dark mode toggle
+    const body = document.body;
+    const toggleBtn = document.getElementById("toggle-theme");
+
+    if (localStorage.getItem("theme") === "dark") {
+        body.classList.add("dark");
+    }
+
+    toggleBtn.addEventListener("click", () => {
+        body.classList.toggle("dark");
+        localStorage.setItem("theme", body.classList.contains("dark") ? "dark" : "light");
+    });
+
+    // Datoformat: "6 Apr 2026"
+    function formatDate(dateStr) {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
     }
 
     async function loadData() {
         const response = await fetch("history.csv?cache=" + Date.now());
         const text = await response.text();
-        const lines = text.trim().split("\n").slice(1);
+        const lines = text.trim().split("\n").slice(1); // hopp over header
 
         const dates = [];
         const prices = [];
 
-lines.forEach(line => {
-    const [date, price] = line.split(",");
+        lines.forEach(line => {
+            const [date, price] = line.split(",");
 
-    // Rens datoen (fjern evt. klokkeslett)
-    const cleanDate = date.split("T")[0];
+            // Rens datoen (fjern evt. klokkeslett)
+            const cleanDate = date.split("T")[0];
 
-    // Formater datoen som "6 Apr 2026"
-    dates.push(formatDate(cleanDate));
+            // Formater datoen som "6 Apr 2026"
+            dates.push(formatDate(cleanDate));
 
-    prices.push(parseFloat(price));
-});
-
+            prices.push(parseFloat(price));
+        });
 
         // Latest price
         const latestPrice = prices[prices.length - 1];
         const latestDate = dates[dates.length - 1];
-        document.getElementById("latest-price").textContent = `${latestPrice} USD (${latestDate})`;
+        document.getElementById("latest-price").textContent =
+            `${latestPrice.toFixed(2)} USD (${latestDate})`;
 
-        // Price change
+        // Price change (valgfritt, men greit å ha)
         if (prices.length > 1) {
             const prevPrice = prices[prices.length - 2];
             const diff = latestPrice - prevPrice;
-            const diffText = diff.toFixed(2);
-
-            const changeEl = document.getElementById("change");
-            changeEl.textContent = diff > 0 ? `+${diffText} USD` : `${diffText} USD`;
-            changeEl.style.color = diff > 0 ? "var(--up)" : "var(--down)";
+            const sign = diff >= 0 ? "+" : "-";
+            document.getElementById("latest-price").textContent +=
+                ` ${sign}${Math.abs(diff).toFixed(2)}`;
         }
 
-        // Table
+        // Fyll tabellen (nyeste øverst)
         const tbody = document.querySelector("#table tbody");
         tbody.innerHTML = "";
-        lines.reverse().forEach(line => {
+        const reversed = [...lines].reverse();
+        reversed.forEach(line => {
             const [date, price] = line.split(",");
-            const row = `<tr><td>${date}</td><td>${price}</td></tr>`;
+            const cleanDate = date.split("T")[0];
+            const formatted = formatDate(cleanDate);
+            const row = `<tr><td>${formatted}</td><td>${parseFloat(price).toFixed(2)}</td></tr>`;
             tbody.innerHTML += row;
         });
 
-        // Plotly interactive chart
+        // Plotly trace
         const trace = {
             x: dates,
             y: prices,
             mode: "lines+markers",
             line: { color: "#4da3ff", width: 3 },
-            marker: { size: 6 },
+            marker: { size: 6 }
         };
 
-const layout = {
-    margin: { t: 20, r: 20, l: 40, b: 80 },
-    paper_bgcolor: "var(--bg)",
-    plot_bgcolor: "var(--bg)",
-    font: { color: "var(--text)" },
-    xaxis: {
-        type: "category",
-        tickangle: -45,
-        tickmode: "auto",
-        nticks: 12,
-        automargin: true,
-        tickson: "boundaries"
-    },
-    transition: { duration: 500 }
-};
+        const layout = {
+            margin: { t: 20, r: 20, l: 40, b: 80 },
+            paper_bgcolor: "var(--bg)",
+            plot_bgcolor: "var(--bg)",
+            font: { color: "var(--text)" },
+            xaxis: {
+                type: "category",
+                tickangle: -45,
+                tickmode: "auto",
+                nticks: 12,
+                automargin: true,
+                tickson: "boundaries"
+            },
+            transition: { duration: 500 }
+        };
 
-const config = {
-    responsive: true,
-    displaylogo: false,
-    modeBarButtonsToAdd: ["resetScale2d"]   // gjør at du kan zoome tilbake
-};
+        const config = {
+            responsive: true,
+            displaylogo: false,
+            modeBarButtonsToAdd: ["resetScale2d"]
+        };
 
-Plotly.newPlot("chart", [trace], layout, config);
+        Plotly.newPlot("chart", [trace], layout, config);
+    }
 
     // Auto-refresh every 60 seconds
     setInterval(loadData, 60000);
 
     loadData();
 </script>
-
 </body>
 </html>
