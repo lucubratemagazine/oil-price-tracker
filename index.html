@@ -169,7 +169,7 @@
         };
 
 const layout = {
-    margin: { t: 20, r: 20, l: 40, b: 40 },
+    margin: { t: 20, r: 20, l: 40, b: 80 },
     paper_bgcolor: "var(--bg)",
     plot_bgcolor: "var(--bg)",
     font: { color: "var(--text)" },
@@ -178,6 +178,8 @@ const layout = {
         tickangle: -45,
         tickmode: "auto",
         nticks: 12
+        automargin: true,
+        tickson: "boundaries"
     },
     transition: { duration: 500 }
 };
