@@ -130,7 +130,7 @@
 
         lines.forEach(line => {
             const [date, price] = line.split(",");
-            dates.push(date);
+            dates.push(formatDate(cleanDate));
             prices.push(parseFloat(price));
         });
 
