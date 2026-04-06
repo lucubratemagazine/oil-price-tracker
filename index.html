@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <title>Oil Price Tracker</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
     <style>
         :root {
             --bg: #f7f7f7;
             --text: #111;
             --card-bg: #fff;
             --accent: #4da3ff;
+            --up: #4caf50;
+            --down: #ff5252;
         }
 
-        /* Dark mode variables */
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg: #121212;
                 --text: #eaeaea;
                 --card-bg: #1e1e1e;
-                --accent: #4da3ff;
             }
         }
 
-        /* Manual override */
         body.dark {
             --bg: #121212;
             --text: #eaeaea;
@@ -68,11 +69,24 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.15);
         }
 
-        img {
+        #change {
+            font-size: 1.2rem;
+            margin-top: 5px;
+        }
+
+        table {
             width: 100%;
-            border-radius: 10px;
-            margin-top: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+
+        th, td {
+            padding: 8px;
+            border-bottom: 1px solid #444;
+        }
+
+        th {
+            background: var(--card-bg);
         }
     </style>
 </head>
@@ -85,29 +99,90 @@
 </div>
 
 <div class="price-box">
-    <strong>Dagens pris:</strong>
-    <span id="latest-price">Loading...</span>
+    <strong>Latest price:</strong>
+    <div id="latest-price">Loading...</div>
+    <div id="change"></div>
 </div>
 
-<h2>Historisk oversikt</h2>
-<img src="chart.png" alt="Oil price chart">
+<h2>Interactive Historical Chart</h2>
+<div id="chart" style="height: 450px;"></div>
+
+<h2>Historical Data</h2>
+<table id="table">
+    <thead>
+        <tr><th>Date</th><th>Price (USD)</th></tr>
+    </thead>
+    <tbody></tbody>
+</table>
 
 <script>
-    async function loadLatestPrice() {
-        const response = await fetch("history.csv");
-        const text = await response.text();
-        const lines = text.trim().split("\n");
-        const last = lines[lines.length - 1].split(",");
-        const date = last[0];
-        const price = last[1];
-        document.getElementById("latest-price").textContent = `${price} USD (${date})`;
-    }
-
     function toggleDarkMode() {
         document.body.classList.toggle("dark");
     }
 
-    loadLatestPrice();
+    async function loadData() {
+        const response = await fetch("history.csv?cache=" + Date.now());
+        const text = await response.text();
+        const lines = text.trim().split("\n").slice(1);
+
+        const dates = [];
+        const prices = [];
+
+        lines.forEach(line => {
+            const [date, price] = line.split(",");
+            dates.push(date);
+            prices.push(parseFloat(price));
+        });
+
+        // Latest price
+        const latestPrice = prices[prices.length - 1];
+        const latestDate = dates[dates.length - 1];
+        document.getElementById("latest-price").textContent = `${latestPrice} USD (${latestDate})`;
+
+        // Price change
+        if (prices.length > 1) {
+            const prevPrice = prices[prices.length - 2];
+            const diff = latestPrice - prevPrice;
+            const diffText = diff.toFixed(2);
+
+            const changeEl = document.getElementById("change");
+            changeEl.textContent = diff > 0 ? `+${diffText} USD` : `${diffText} USD`;
+            changeEl.style.color = diff > 0 ? "var(--up)" : "var(--down)";
+        }
+
+        // Table
+        const tbody = document.querySelector("#table tbody");
+        tbody.innerHTML = "";
+        lines.reverse().forEach(line => {
+            const [date, price] = line.split(",");
+            const row = `<tr><td>${date}</td><td>${price}</td></tr>`;
+            tbody.innerHTML += row;
+        });
+
+        // Plotly interactive chart
+        const trace = {
+            x: dates,
+            y: prices,
+            mode: "lines+markers",
+            line: { color: "#4da3ff", width: 3 },
+            marker: { size: 6 },
+        };
+
+        const layout = {
+            margin: { t: 20, r: 20, l: 40, b: 40 },
+            paper_bgcolor: "var(--bg)",
+            plot_bgcolor: "var(--bg)",
+            font: { color: "var(--text)" },
+            transition: { duration: 500 },
+        };
+
+        Plotly.newPlot("chart", [trace], layout, { responsive: true });
+    }
+
+    // Auto-refresh every 60 seconds
+    setInterval(loadData, 60000);
+
+    loadData();
 </script>
 
 </body>
