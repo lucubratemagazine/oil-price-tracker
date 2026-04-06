@@ -174,10 +174,14 @@ const layout = {
     plot_bgcolor: "var(--bg)",
     font: { color: "var(--text)" },
     xaxis: {
-        type: "category"   // 👈 Tvinger Plotly til å bruke datoer som tekst
+        type: "category",
+        tickangle: -45,
+        tickmode: "auto",
+        nticks: 12
     },
     transition: { duration: 500 }
 };
+
 
 
         Plotly.newPlot("chart", [trace], layout, { responsive: true });
