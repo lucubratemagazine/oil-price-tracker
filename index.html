@@ -168,13 +168,17 @@
             marker: { size: 6 },
         };
 
-        const layout = {
-            margin: { t: 20, r: 20, l: 40, b: 40 },
-            paper_bgcolor: "var(--bg)",
-            plot_bgcolor: "var(--bg)",
-            font: { color: "var(--text)" },
-            transition: { duration: 500 },
-        };
+const layout = {
+    margin: { t: 20, r: 20, l: 40, b: 40 },
+    paper_bgcolor: "var(--bg)",
+    plot_bgcolor: "var(--bg)",
+    font: { color: "var(--text)" },
+    xaxis: {
+        type: "category"   // 👈 Tvinger Plotly til å bruke datoer som tekst
+    },
+    transition: { duration: 500 }
+};
+
 
         Plotly.newPlot("chart", [trace], layout, { responsive: true });
     }
