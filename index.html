@@ -128,11 +128,18 @@
         const dates = [];
         const prices = [];
 
-        lines.forEach(line => {
-            const [date, price] = line.split(",");
-            dates.push(formatDate(cleanDate));
-            prices.push(parseFloat(price));
-        });
+lines.forEach(line => {
+    const [date, price] = line.split(",");
+
+    // Rens datoen (fjern evt. klokkeslett)
+    const cleanDate = date.split("T")[0];
+
+    // Formater datoen som "6 Apr 2026"
+    dates.push(formatDate(cleanDate));
+
+    prices.push(parseFloat(price));
+});
+
 
         // Latest price
         const latestPrice = prices[prices.length - 1];
