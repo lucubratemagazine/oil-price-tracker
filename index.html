@@ -184,10 +184,13 @@ const layout = {
     transition: { duration: 500 }
 };
 
+const config = {
+    responsive: true,
+    displaylogo: false,
+    modeBarButtonsToAdd: ["resetScale2d"]   // gjør at du kan zoome tilbake
+};
 
-
-        Plotly.newPlot("chart", [trace], layout, { responsive: true });
-    }
+Plotly.newPlot("chart", [trace], layout, config);
 
     // Auto-refresh every 60 seconds
     setInterval(loadData, 60000);
