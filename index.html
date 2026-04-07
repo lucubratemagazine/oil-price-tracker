@@ -147,13 +147,25 @@
         const eiaPrices = [];
         const yahooPrices = [];
 
-        lines.forEach(line => {
-            const [date, eia, yahoo] = line.split(",");
+lines.forEach(line => {
+    const [date, eia, yahoo] = line.split(",");
 
-            dates.push(formatDate(date));
-            eiaPrices.push(parseFloat(eia));
-            yahooPrices.push(parseFloat(yahoo));
-        });
+    if (!date || date === "Invalid Date" || isNaN(Date.parse(date))) {
+        return; // skip bad rows
+    }
+
+    const eiaVal = parseFloat(eia);
+    const yahooVal = parseFloat(yahoo);
+
+    if (isNaN(eiaVal) && isNaN(yahooVal)) {
+        return; // skip rows with no usable data
+    }
+
+    dates.push(formatDate(date));
+    eiaPrices.push(eiaVal);
+    yahooPrices.push(yahooVal);
+});
+
 
         // Latest price (Yahoo is most up-to-date)
         const latestYahoo = yahooPrices[yahooPrices.length - 1];
