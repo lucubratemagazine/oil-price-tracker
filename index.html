@@ -14,6 +14,8 @@
             --text: #111111;
             --card-bg: #f5f5f5;
             --accent: #4da3ff;
+            --eia-color: #4da3ff;
+            --yahoo-color: #ff9933;
         }
 
         body.dark {
@@ -21,6 +23,8 @@
             --text: #f5f5f5;
             --card-bg: #1e1e1e;
             --accent: #4da3ff;
+            --eia-color: #4da3ff;
+            --yahoo-color: #ffb366;
         }
 
         body {
@@ -64,7 +68,7 @@
 
         #chart {
             width: 100%;
-            height: 400px;
+            height: 280px;
         }
 
         table {
@@ -102,7 +106,8 @@
         <thead>
         <tr>
             <th>Date</th>
-            <th>Price (USD)</th>
+            <th>EIA Price (USD)</th>
+            <th>Yahoo Price (USD)</th>
         </tr>
         </thead>
         <tbody></tbody>
@@ -123,7 +128,7 @@
         localStorage.setItem("theme", body.classList.contains("dark") ? "dark" : "light");
     });
 
-    // Datoformat: "6 Apr 2026"
+    // Format date: "6 Apr 2026"
     function formatDate(dateStr) {
         const d = new Date(dateStr);
         return d.toLocaleDateString("en-GB", {
@@ -136,65 +141,63 @@
     async function loadData() {
         const response = await fetch("history.csv?cache=" + Date.now());
         const text = await response.text();
-        const lines = text.trim().split("\n").slice(1); // hopp over header
+        const lines = text.trim().split("\n").slice(1); // skip header
 
         const dates = [];
-        const prices = [];
+        const eiaPrices = [];
+        const yahooPrices = [];
 
         lines.forEach(line => {
-            const [date, price] = line.split(",");
+            const [date, eia, yahoo] = line.split(",");
 
-            // Rens datoen (fjern evt. klokkeslett)
-            const cleanDate = date.split("T")[0];
-
-            // Formater datoen som "6 Apr 2026"
-            dates.push(formatDate(cleanDate));
-
-            prices.push(parseFloat(price));
+            dates.push(formatDate(date));
+            eiaPrices.push(parseFloat(eia));
+            yahooPrices.push(parseFloat(yahoo));
         });
 
-        // Latest price
-        const latestPrice = prices[prices.length - 1];
+        // Latest price (Yahoo is most up-to-date)
+        const latestYahoo = yahooPrices[yahooPrices.length - 1];
         const latestDate = dates[dates.length - 1];
+
         document.getElementById("latest-price").textContent =
-            `${latestPrice.toFixed(2)} USD (${latestDate})`;
+            `${latestYahoo.toFixed(2)} USD (${latestDate})`;
 
-        // Price change (valgfritt, men greit å ha)
-        if (prices.length > 1) {
-            const prevPrice = prices[prices.length - 2];
-            const diff = latestPrice - prevPrice;
-            const sign = diff >= 0 ? "+" : "-";
-            document.getElementById("latest-price").textContent +=
-                ` ${sign}${Math.abs(diff).toFixed(2)}`;
-        }
-
-        // Fyll tabellen (nyeste øverst)
+        // Fill table (newest first)
         const tbody = document.querySelector("#table tbody");
         tbody.innerHTML = "";
         const reversed = [...lines].reverse();
-        reversed.forEach(line => {
-        const [date, eia, yahoo] = line.split(",");
-        dates.push(formatDate(date));
-        eiaPrices.push(parseFloat(eia));
-        yahooPrices.push(parseFloat(yahoo));
 
-            const cleanDate = date.split("T")[0];
-            const formatted = formatDate(cleanDate);
-            const row = `<tr><td>${formatted}</td><td>${parseFloat(price).toFixed(2)}</td></tr>`;
+        reversed.forEach(line => {
+            const [date, eia, yahoo] = line.split(",");
+            const formatted = formatDate(date);
+            const row = `
+                <tr>
+                    <td>${formatted}</td>
+                    <td>${parseFloat(eia).toFixed(2)}</td>
+                    <td>${parseFloat(yahoo).toFixed(2)}</td>
+                </tr>`;
             tbody.innerHTML += row;
         });
 
-        // Plotly trace
-        const trace = {
+        // Plotly traces
+        const traceEIA = {
             x: dates,
-            y: prices,
+            y: eiaPrices,
             mode: "lines+markers",
-            line: { color: "#4da3ff", width: 3 },
-            marker: { size: 6 }
+            name: "EIA (official)",
+            line: { color: "var(--eia-color)", width: 3 }
+        };
+
+        const traceYahoo = {
+            x: dates,
+            y: yahooPrices,
+            mode: "lines+markers",
+            name: "Yahoo Finance (real-time)",
+            line: { color: "var(--yahoo-color)", width: 3 }
         };
 
         const layout = {
-            height: 300,   // ← juster høyden her
+            height: 280,
             margin: { t: 20, r: 20, l: 40, b: 40 },
             paper_bgcolor: "var(--bg)",
             plot_bgcolor: "var(--bg)",
@@ -202,37 +205,16 @@
             xaxis: {
                 type: "category",
                 tickangle: -45,
-                tickmode: "auto",
-                nticks: 12,
-                automargin: true,
-                tickson: "boundaries"
-            },
-            transition: { duration: 500 }
+                automargin: true
+            }
         };
 
         const config = {
             responsive: true,
-            displaylogo: false,
-            modeBarButtonsToAdd: ["resetScale2d"]
+            displaylogo: false
         };
-const traceEIA = {
-    x: dates,
-    y: eiaPrices,
-    mode: "lines+markers",
-    name: "EIA (offisiell)",
-    line: { color: "#4da3ff", width: 3 }
-};
 
-const traceYahoo = {
-    x: dates,
-    y: yahooPrices,
-    mode: "lines+markers",
-    name: "Yahoo Finance (sanntid)",
-    line: { color: "#ff9933", width: 3 }
-};
-
-Plotly.newPlot("chart", [traceEIA, traceYahoo], layout, config);
-
+        Plotly.newPlot("chart", [traceEIA, traceYahoo], layout, config);
     }
 
     // Auto-refresh every 60 seconds
