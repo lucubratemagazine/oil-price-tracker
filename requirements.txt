@@ -1,7 +1,6 @@
-pandas
-matplotlib
 requests
-python-dateutil
-yfinance
 pandas
 numpy
+yfinance
+python-dateutil
+matplotlib
