@@ -173,7 +173,11 @@
         tbody.innerHTML = "";
         const reversed = [...lines].reverse();
         reversed.forEach(line => {
-            const [date, price] = line.split(",");
+        const [date, eia, yahoo] = line.split(",");
+        dates.push(formatDate(date));
+        eiaPrices.push(parseFloat(eia));
+        yahooPrices.push(parseFloat(yahoo));
+
             const cleanDate = date.split("T")[0];
             const formatted = formatDate(cleanDate);
             const row = `<tr><td>${formatted}</td><td>${parseFloat(price).toFixed(2)}</td></tr>`;
