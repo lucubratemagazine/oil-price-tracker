@@ -211,8 +211,24 @@
             displaylogo: false,
             modeBarButtonsToAdd: ["resetScale2d"]
         };
+const traceEIA = {
+    x: dates,
+    y: eiaPrices,
+    mode: "lines+markers",
+    name: "EIA (offisiell)",
+    line: { color: "#4da3ff", width: 3 }
+};
 
-        Plotly.newPlot("chart", [trace], layout, config);
+const traceYahoo = {
+    x: dates,
+    y: yahooPrices,
+    mode: "lines+markers",
+    name: "Yahoo Finance (sanntid)",
+    line: { color: "#ff9933", width: 3 }
+};
+
+Plotly.newPlot("chart", [traceEIA, traceYahoo], layout, config);
+
     }
 
     // Auto-refresh every 60 seconds
