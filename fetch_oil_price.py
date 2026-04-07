@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 
 # API for Brent crude oil price (EIA)
-API_URL = "https://api.eia.gov/v2/petroleum/pri/spt/data/?frequency=daily&data[0]=value&facets[series][]=RBRTE&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=1&api_key=DEMO_KEY"
+API_URL = "https://api.eia.gov/v2/petroleum/pri/spt/data/?frequency=daily&data[0]=value&facets[series][]=RBRTE&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=1&api_key=4msf5FM2dOmGZrWg53TBPItkMuQYErjgjxwpGMCm"
 
 def fetch_oil_price():
     response = requests.get(API_URL)
