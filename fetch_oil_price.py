@@ -4,13 +4,21 @@ import os
 from datetime import datetime
 import yfinance as yf
 
-EIA_URL = "https://api.eia.gov/v2/petroleum/pri/spt/data/?frequency=daily&data[0]=value&facets[series][]=RBRTE&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=1&api_key=4msf5FM2dOmGZrWg53TBPItkMuQYErjgjxwpGMCm"
-
+# EIA API (official, but delayed)
+EIA_URL = (
+    "https://api.eia.gov/v2/petroleum/pri/spt/data/"
+    "?frequency=daily&data[0]=value&facets[series][]=RBRTE"
+    "&sort[0][column]=period&sort[0][direction]=desc"
+    "&offset=0&length=1"
+    "&api_key=4msf5FM2dOmGZrWg53TBPItkMuQYErjgjxwpGMCm"
+)
 
 def log(msg):
     print(f"[INFO] {msg}")
 
-
+# -----------------------------
+# Fetch EIA price
+# -----------------------------
 def fetch_eia_price():
     try:
         log("Fetching EIA price...")
@@ -24,57 +32,76 @@ def fetch_eia_price():
 
         log(f"EIA OK: {date} = {price}")
         return date, price
+
     except Exception as e:
         log(f"EIA FAILED: {e}")
         return None, None
 
-
+# -----------------------------
+# Fetch Yahoo Finance price
+# -----------------------------
 def fetch_yahoo_price():
     try:
         log("Fetching Yahoo Finance price...")
         ticker = yf.Ticker("BZ=F")
         hist = ticker.history(period="1d")
 
+        if hist.empty:
+            raise ValueError("Yahoo returned empty dataset")
+
         price = float(hist["Close"].iloc[-1])
         date = datetime.utcnow().strftime("%Y-%m-%d")
 
         log(f"Yahoo OK: {date} = {price}")
         return date, price
+
     except Exception as e:
         log(f"Yahoo FAILED: {e}")
         return None, None
 
-
+# -----------------------------
+# Append to CSV (robust version)
+# -----------------------------
 def append_to_csv(date, eia_price, yahoo_price, filename="history.csv"):
-    file_exists = os.path.isfile(filename)
 
-    if not file_exists or os.path.getsize(filename) == 0:
+    # If file missing or empty → create header
+    if not os.path.isfile(filename) or os.path.getsize(filename) == 0:
         log("Creating new CSV with header...")
         with open(filename, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["date", "eia_price", "yahoo_price"])
+        last_date = None
 
-    last_date = None
-    with open(filename, "r", newline="") as f:
-        rows = list(csv.reader(f))
-        if len(rows) > 1:
+    else:
+        # Read existing rows safely (filter out empty lines)
+        with open(filename, "r", newline="") as f:
+            rows = [row for row in csv.reader(f) if row]
+
+        # If only header exists
+        if len(rows) <= 1:
+            last_date = None
+        else:
             last_date = rows[-1][0]
 
+    # Avoid duplicate dates
     if last_date == date:
         log(f"Skipping append: {date} already exists")
         return
 
+    # Append new row
     with open(filename, "a", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([date, eia_price, yahoo_price])
         log(f"Added row: {date}, {eia_price}, {yahoo_price}")
 
-
+# -----------------------------
+# Main execution
+# -----------------------------
 if __name__ == "__main__":
     eia_date, eia_price = fetch_eia_price()
     yahoo_date, yahoo_price = fetch_yahoo_price()
 
-    # Fallback‑logikk
+    # Determine final date (Yahoo preferred)
     if yahoo_date:
         final_date = yahoo_date
     elif eia_date:
@@ -83,14 +110,10 @@ if __name__ == "__main__":
         log("Both EIA and Yahoo failed — aborting.")
         exit(1)
 
+    # Fallback values
     if yahoo_price is None:
         yahoo_price = "NaN"
-
     if eia_price is None:
         eia_price = "NaN"
 
     append_to_csv(final_date, eia_price, yahoo_price)
-
-if __name__ == "__main__":
-    date, price = fetch_oil_price()
-    append_to_csv(date, price)
