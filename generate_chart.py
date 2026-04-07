@@ -73,6 +73,60 @@ def generate_chart(df, output="chart.png"):
         height=500,
         margin=dict(l=40, r=20, t=40, b=40)
     )
+    # -----------------------------------------
+    # Detect 5/10/15% changes in last 30 days
+    # -----------------------------------------
+    log("Calculating percentage change alerts...")
+
+    # Use Yahoo price if available, else EIA
+    df["price"] = df["yahoo_price"].fillna(df["eia_price"])
+
+    # Filter last 30 days
+    last_30 = df[df["date"] >= (df["date"].max() - pd.Timedelta(days=30))]
+
+    if len(last_30) > 1:
+        start_price = last_30["price"].iloc[0]
+
+        # Calculate percent change
+        last_30["pct_change"] = (last_30["price"] - start_price) / start_price * 100
+
+        # Thresholds: ±5%, ±10%, ±15%, ...
+        thresholds = []
+        for pct in range(5, 101, 5):
+            thresholds.append(pct)
+            thresholds.append(-pct)
+
+        # Find crossings
+        alerts = []
+        for t in thresholds:
+            crossed = last_30[last_30["pct_change"] >= t] if t > 0 else last_30[last_30["pct_change"] <= t]
+            if not crossed.empty:
+                row = crossed.iloc[0]
+                alerts.append((row["date"], row["price"], t))
+
+        # Add markers to chart
+        for date, price, pct in alerts:
+            fig.add_trace(go.Scatter(
+                x=[date],
+                y=[price],
+                mode="markers+text",
+                text=[f"{pct:+.0f}%"],
+                textposition="top center",
+                marker=dict(size=12, color="red" if pct < 0 else "green"),
+                name=f"{pct:+.0f}% alert"
+            ))
+
+        log(f"Added {len(alerts)} percentage-change alerts.")
+    else:
+        log("Not enough data for 30-day analysis.")
+ 
+  #   Save as PNG
+
+    try:
+        pio.write_image(fig, output, width=1000, height=500)
+        log(f"Chart saved as {output}")
+    except Exception as e:
+        log(f"Failed to save chart: {e}")
 
     # Save as PNG
     try:
