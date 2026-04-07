@@ -14,13 +14,9 @@ jobs:
 
     steps:
       - name: Check out repository
-        run: |
-          echo "📥 Checking out repository..."
         uses: actions/checkout@v4
 
       - name: Set up Python
-        run: |
-          echo "🐍 Setting up Python..."
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -30,9 +26,9 @@ jobs:
           echo "📦 Installing requirements..."
           pip install -r requirements.txt
 
-      - name: Install Yahoo Finance dependencies
+      - name: Install Yahoo Finance stack
         run: |
-          echo "📦 Installing Yahoo Finance stack..."
+          echo "📦 Installing Yahoo Finance dependencies..."
           pip install yfinance pandas numpy
 
       - name: Fetch oil price
