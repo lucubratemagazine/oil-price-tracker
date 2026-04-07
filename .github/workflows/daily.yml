@@ -14,29 +14,47 @@ jobs:
 
     steps:
       - name: Check out repository
+        run: |
+          echo "📥 Checking out repository..."
         uses: actions/checkout@v4
 
       - name: Set up Python
+        run: |
+          echo "🐍 Setting up Python..."
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          echo "📦 Installing requirements..."
+          pip install -r requirements.txt
+
+      - name: Install Yahoo Finance dependencies
+        run: |
+          echo "📦 Installing Yahoo Finance stack..."
+          pip install yfinance pandas numpy
 
       - name: Fetch oil price
-        run: python fetch_oil_price.py
+        run: |
+          echo "⛽ Running fetch_oil_price.py..."
+          python fetch_oil_price.py
 
       - name: Generate chart
-        run: python generate_chart.py
+        run: |
+          echo "📊 Generating chart..."
+          python generate_chart.py
 
       - name: Configure Git
         run: |
+          echo "🛠 Configuring Git..."
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
       - name: Commit and push changes
         run: |
-          git add history.csv chart.png
-          git commit -m "Update oil price data" || echo "No changes"
+          echo "💾 Committing changes..."
+          git add history.csv chart.png || true
+          git commit -m "Update oil price data" || echo "No changes to commit"
+          echo "🚀 Pushing to repository..."
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
