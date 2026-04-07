@@ -4,3 +4,6 @@ numpy
 yfinance
 python-dateutil
 matplotlib
+plotly
+kaleido
+
