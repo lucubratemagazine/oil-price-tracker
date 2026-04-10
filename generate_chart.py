@@ -63,7 +63,8 @@ def build_figure(df, theme="plotly_white"):
         y=df["eia_price"],
         mode="lines+markers",
         name="EIA (official)",
-        line=dict(color="#4da3ff", width=3)
+        line=dict(color="#4da3ff", width=3),
+        marker=dict(size=6)
     ))
 
     fig.add_trace(go.Scatter(
@@ -71,7 +72,8 @@ def build_figure(df, theme="plotly_white"):
         y=df["yahoo_price"],
         mode="lines+markers",
         name="Yahoo Finance (real-time)",
-        line=dict(color="#ff9933", width=3)
+        line=dict(color="#ff9933", width=3),
+        marker=dict(size=6)
     ))
 
     fig.update_layout(
@@ -81,13 +83,27 @@ def build_figure(df, theme="plotly_white"):
         template=theme,
         height=500,
         margin=dict(l=40, r=20, t=80, b=40),
+
+        # ⭐ STØRRE LEGEND‑TEKST
         legend=dict(
             orientation="h",
             yanchor="bottom",
-            y=1.15,
+            y=1.18,
             xanchor="left",
             x=0,
-            font=dict(size=18)
+            font=dict(size=22),
+            itemsizing="constant"
+        ),
+
+        # ⭐ STØRRE AKSETITLER
+        xaxis=dict(
+            title_font=dict(size=20),
+            tickfont=dict(size=14),
+            tickangle=45   # ← SKRÅSTILTE DATOER
+        ),
+        yaxis=dict(
+            title_font=dict(size=20),
+            tickfont=dict(size=14)
         )
     )
 
@@ -96,7 +112,6 @@ def build_figure(df, theme="plotly_white"):
 def generate_chart(df):
     log("Generating charts...")
 
-    # 30-dagers endring
     compute_30d_change(df)
 
     # LIGHT
@@ -112,12 +127,10 @@ def generate_chart(df):
 if __name__ == "__main__":
     df = load_csv()
     if df is None:
-        log("Aborting chart generation.")
         exit(1)
 
     df = clean_dataframe(df)
     if df is None or df.empty:
-        log("No valid data — chart not generated.")
         exit(1)
 
     generate_chart(df)
