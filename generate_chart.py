@@ -36,6 +36,25 @@ def clean_dataframe(df):
     log(f"Cleaned dataframe: {len(df)} valid rows.")
     return df
 
+def compute_30d_change(df):
+    log("Calculating 30-day change...")
+
+    df["price"] = df["yahoo_price"].fillna(df["eia_price"])
+    last_30 = df[df["date"] >= (df["date"].max() - pd.Timedelta(days=30))]
+
+    if len(last_30) > 1:
+        start_price = last_30["price"].iloc[0]
+        end_price = last_30["price"].iloc[-1]
+        pct_change_30d = round((end_price - start_price) / start_price * 100, 2)
+
+        log(f"30-day change: {pct_change_30d}%")
+        with open("change30d.txt", "w") as f:
+            f.write(str(pct_change_30d))
+    else:
+        log("Not enough data for 30-day change.")
+        with open("change30d.txt", "w") as f:
+            f.write("NaN")
+
 def build_figure(df, theme="plotly_white"):
     fig = go.Figure()
 
@@ -68,7 +87,7 @@ def build_figure(df, theme="plotly_white"):
             y=1.15,
             xanchor="left",
             x=0,
-            font=dict(size=18)   # ← STØRRE LEGEND-TEKST
+            font=dict(size=18)
         )
     )
 
@@ -77,12 +96,15 @@ def build_figure(df, theme="plotly_white"):
 def generate_chart(df):
     log("Generating charts...")
 
-    # LIGHT MODE
+    # 30-dagers endring
+    compute_30d_change(df)
+
+    # LIGHT
     fig_light = build_figure(df, theme="plotly_white")
     pio.write_image(fig_light, "chart_light.png", width=1000, height=500)
     log("Saved chart_light.png")
 
-    # DARK MODE
+    # DARK
     fig_dark = build_figure(df, theme="plotly_dark")
     pio.write_image(fig_dark, "chart_dark.png", width=1000, height=500)
     log("Saved chart_dark.png")
@@ -90,10 +112,12 @@ def generate_chart(df):
 if __name__ == "__main__":
     df = load_csv()
     if df is None:
+        log("Aborting chart generation.")
         exit(1)
 
     df = clean_dataframe(df)
     if df is None or df.empty:
+        log("No valid data — chart not generated.")
         exit(1)
 
     generate_chart(df)
