@@ -2,7 +2,7 @@ name: Update oil price data
 
 on:
   schedule:
-    - cron: "0 5 * * *"
+    - cron: "0 5 * * *"   # Runs every day at 05:00 UTC
   workflow_dispatch:
 
 env:
@@ -31,9 +31,9 @@ jobs:
           echo "📡 Fetching oil price data..."
           python fetch_oil_price.py
 
-      - name: Generate chart
+      - name: Generate charts
         run: |
-          echo "📊 Generating chart..."
+          echo "📊 Generating charts..."
           python generate_chart.py
 
       - name: Configure Git
@@ -43,6 +43,6 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add history.csv chart.png change30d.txt || true
+          git add history.csv chart_light.png chart_dark.png change30d.txt || true
           git commit -m "Update oil price data" || true
           git push || true
