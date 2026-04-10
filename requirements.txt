@@ -1,9 +1,6 @@
 requests
-pandas
-numpy
 yfinance
-python-dateutil
-matplotlib
+pandas
 plotly
 kaleido
 
