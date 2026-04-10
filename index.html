@@ -4,41 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Oil Price Tracker</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
             max-width: 800px;
         }
+
         #latest {
             background: #eef6ff;
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 20px;
         }
+
         #change30d {
             font-weight: bold;
             margin-top: 6px;
         }
+
         img {
             width: 100%;
             border-radius: 8px;
             margin-top: 20px;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 25px;
+            font-size: 15px;
         }
+
         th, td {
             padding: 8px;
             border-bottom: 1px solid #ddd;
         }
+
         th {
             background: #f0f0f0;
         }
+
+        /* Mobilvennlig tabell */
+        @media (max-width: 600px) {
+            table {
+                font-size: 14px;
+            }
+            th, td {
+                padding: 6px;
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <h1>Oil Price Tracker</h1>
@@ -64,7 +83,7 @@
     </table>
 
     <script>
-        // Load latest price from CSV
+        // Load latest price
         fetch("history.csv")
             .then(r => r.text())
             .then(text => {
@@ -72,10 +91,10 @@
                 const last = rows[rows.length - 1].split(",");
 
                 const date = last[0];
-                const eia = last[1];
-                const yahoo = last[2];
+                const eia = parseFloat(last[1]);
+                const yahoo = parseFloat(last[2]);
 
-                const price = yahoo !== "NaN" ? yahoo : eia;
+                const price = !isNaN(yahoo) ? yahoo.toFixed(2) : eia.toFixed(2);
 
                 document.getElementById("latestPrice").innerHTML =
                     `Latest price: <strong>${price} USD</strong> (${date})`;
@@ -90,7 +109,7 @@
 
                 const color = num >= 0 ? "green" : "red";
                 document.getElementById("change30d").innerHTML =
-                    `30‑day change: <span style="color:${color}">${num}%</span>`;
+                    `30‑day change: <span style="color:${color}">${num.toFixed(2)}%</span>`;
             });
 
         // Load history table
@@ -102,11 +121,15 @@
 
                 rows.reverse().forEach(row => {
                     const cols = row.split(",");
+                    const date = cols[0];
+                    const eia = parseFloat(cols[1]);
+                    const yahoo = parseFloat(cols[2]);
+
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
-                        <td>${cols[0]}</td>
-                        <td>${cols[1]}</td>
-                        <td>${cols[2]}</td>
+                        <td>${date}</td>
+                        <td>${!isNaN(eia) ? eia.toFixed(2) : "NaN"}</td>
+                        <td>${!isNaN(yahoo) ? yahoo.toFixed(2) : "NaN"}</td>
                     `;
                     body.appendChild(tr);
                 });
