@@ -1,11 +1,8 @@
-name: Daily
-
-permissions:
-  contents: write
+name: Update oil price data
 
 on:
   schedule:
-    - cron: "0 6 * * *"
+    - cron: "0 5 * * *"   # Runs every day at 05:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -13,27 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
-          echo "📦 Installing requirements..."
           pip install -r requirements.txt
 
-      - name: Install Yahoo Finance stack
+      - name: Fetch oil price data
         run: |
-          echo "📦 Installing Yahoo Finance dependencies..."
-          pip install yfinance pandas numpy
-
-      - name: Fetch oil price
-        run: |
-          echo "⛽ Running fetch_oil_price.py..."
+          echo "📡 Fetching oil price data..."
           python fetch_oil_price.py
 
       - name: Generate chart
@@ -43,14 +35,11 @@ jobs:
 
       - name: Configure Git
         run: |
-          echo "🛠 Configuring Git..."
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
       - name: Commit and push changes
         run: |
-          echo "💾 Committing changes..."
-          git add history.csv chart.png || true
-          git commit -m "Update oil price data" || echo "No changes to commit"
-          echo "🚀 Pushing to repository..."
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git add history.csv chart.png change30d.txt || true
+          git commit -m "Update oil price data" || true
+          git push || true
