@@ -36,12 +36,9 @@ def clean_dataframe(df):
     log(f"Cleaned dataframe: {len(df)} valid rows.")
     return df
 
-def generate_chart(df, output="chart.png"):
-    log("Generating Plotly chart...")
-
+def build_figure(df, theme="plotly_white"):
     fig = go.Figure()
 
-    # EIA line
     fig.add_trace(go.Scatter(
         x=df["date"],
         y=df["eia_price"],
@@ -50,7 +47,6 @@ def generate_chart(df, output="chart.png"):
         line=dict(color="#4da3ff", width=3)
     ))
 
-    # Yahoo line
     fig.add_trace(go.Scatter(
         x=df["date"],
         y=df["yahoo_price"],
@@ -59,12 +55,11 @@ def generate_chart(df, output="chart.png"):
         line=dict(color="#ff9933", width=3)
     ))
 
-    # Legend at top (Option A)
     fig.update_layout(
         title="Oil Price History",
         xaxis_title="Date",
         yaxis_title="Price (USD)",
-        template="plotly_white",
+        template=theme,
         height=500,
         margin=dict(l=40, r=20, t=80, b=40),
         legend=dict(
@@ -72,99 +67,33 @@ def generate_chart(df, output="chart.png"):
             yanchor="bottom",
             y=1.15,
             xanchor="left",
-            x=0
+            x=0,
+            font=dict(size=18)   # ← STØRRE LEGEND-TEKST
         )
     )
 
-    # -----------------------------------------
-    # 30-day change
-    # -----------------------------------------
-    log("Calculating 30-day change...")
+    return fig
 
-    df["price"] = df["yahoo_price"].fillna(df["eia_price"])
-    last_30 = df[df["date"] >= (df["date"].max() - pd.Timedelta(days=30))]
+def generate_chart(df):
+    log("Generating charts...")
 
-    if len(last_30) > 1:
-        start_price = last_30["price"].iloc[0]
-        end_price = last_30["price"].iloc[-1]
-        pct_change_30d = round((end_price - start_price) / start_price * 100, 2)
+    # LIGHT MODE
+    fig_light = build_figure(df, theme="plotly_white")
+    pio.write_image(fig_light, "chart_light.png", width=1000, height=500)
+    log("Saved chart_light.png")
 
-        log(f"30-day change: {pct_change_30d}%")
-
-        with open("change30d.txt", "w") as f:
-            f.write(str(pct_change_30d))
-    else:
-        log("Not enough data for 30-day change.")
-        with open("change30d.txt", "w") as f:
-            f.write("NaN")
-
-    # -----------------------------------------
-    # Detect 5/10/15% changes in last 30 days
-    # -----------------------------------------
-    log("Calculating percentage change alerts...")
-
-    if len(last_30) > 1:
-        last_30["pct_change"] = (last_30["price"] - start_price) / start_price * 100
-
-        thresholds = []
-        for pct in range(5, 101, 5):
-            thresholds.append(pct)
-            thresholds.append(-pct)
-
-        alerts = []
-        for t in thresholds:
-            crossed = last_30[last_30["pct_change"] >= t] if t > 0 else last_30[last_30["pct_change"] <= t]
-            if not crossed.empty:
-                row = crossed.iloc[0]
-                alerts.append((row["date"], row["price"], t))
-
-        for date, price, pct in alerts:
-            fig.add_trace(go.Scatter(
-                x=[date],
-                y=[price],
-                mode="markers+text",
-                text=[f"{pct:+.0f}%"],
-                textfont=dict(size=16, color="white"),
-                textposition="middle center",
-                marker=dict(
-                    size=28,
-                    color="red" if pct < 0 else "green",
-                    line=dict(width=2, color="black")
-                ),
-                name=f"{pct:+.0f}% alert"
-            ))
-
-            fig.add_vline(
-                x=date,
-                line_width=2,
-                line_dash="dash",
-                line_color="red" if pct < 0 else "green"
-            )
-
-        log(f"Added {len(alerts)} percentage-change alerts.")
-    else:
-        log("Not enough data for alert analysis.")
-
-    # -----------------------------------------
-    # Save as PNG
-    # -----------------------------------------
-    try:
-        pio.write_image(fig, output, width=1000, height=500)
-        log(f"Chart saved as {output}")
-    except Exception as e:
-        log(f"Failed to save chart: {e}")
+    # DARK MODE
+    fig_dark = build_figure(df, theme="plotly_dark")
+    pio.write_image(fig_dark, "chart_dark.png", width=1000, height=500)
+    log("Saved chart_dark.png")
 
 if __name__ == "__main__":
     df = load_csv()
-
     if df is None:
-        log("Aborting chart generation.")
         exit(1)
 
     df = clean_dataframe(df)
-
     if df is None or df.empty:
-        log("No valid data — chart not generated.")
         exit(1)
 
     generate_chart(df)
