@@ -46,7 +46,6 @@
             background: #f0f0f0;
         }
 
-        /* Mobilvennlig tabell */
         @media (max-width: 600px) {
             table {
                 font-size: 14px;
@@ -55,10 +54,22 @@
                 padding: 6px;
             }
         }
+
+        #themeBtn {
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: none;
+            background: #333;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 
 <body>
+
+    <button id="themeBtn">Toggle Dark Mode</button>
 
     <h1>Oil Price Tracker</h1>
 
@@ -68,7 +79,7 @@
     </div>
 
     <h2>Historical Chart</h2>
-    <img src="chart.png" alt="Oil Price Chart">
+    <img id="chartImg" src="chart_light.png" alt="Oil Price Chart">
 
     <h2>History</h2>
     <table id="historyTable">
@@ -134,6 +145,24 @@
                     body.appendChild(tr);
                 });
             });
+
+        // THEME SWITCHER
+        const chartImg = document.getElementById("chartImg");
+        const themeBtn = document.getElementById("themeBtn");
+
+        function applyTheme() {
+            const dark = localStorage.getItem("darkmode") === "1";
+            chartImg.src = dark ? "chart_dark.png" : "chart_light.png";
+            themeBtn.textContent = dark ? "Switch to Light Mode" : "Switch to Dark Mode";
+        }
+
+        themeBtn.onclick = () => {
+            const dark = localStorage.getItem("darkmode") === "1";
+            localStorage.setItem("darkmode", dark ? "0" : "1");
+            applyTheme();
+        };
+
+        applyTheme();
     </script>
 
 </body>
