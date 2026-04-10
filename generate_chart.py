@@ -121,3 +121,50 @@ def generate_chart(df, output="chart.png"):
         for date, price, pct in alerts:
             fig.add_trace(go.Scatter(
                 x=[date],
+                y=[price],
+                mode="markers+text",
+                text=[f"{pct:+.0f}%"],
+                textfont=dict(size=16, color="white"),
+                textposition="middle center",
+                marker=dict(
+                    size=28,
+                    color="red" if pct < 0 else "green",
+                    line=dict(width=2, color="black")
+                ),
+                name=f"{pct:+.0f}% alert"
+            ))
+
+            fig.add_vline(
+                x=date,
+                line_width=2,
+                line_dash="dash",
+                line_color="red" if pct < 0 else "green"
+            )
+
+        log(f"Added {len(alerts)} percentage-change alerts.")
+    else:
+        log("Not enough data for alert analysis.")
+
+    # -----------------------------------------
+    # Save as PNG
+    # -----------------------------------------
+    try:
+        pio.write_image(fig, output, width=1000, height=500)
+        log(f"Chart saved as {output}")
+    except Exception as e:
+        log(f"Failed to save chart: {e}")
+
+if __name__ == "__main__":
+    df = load_csv()
+
+    if df is None:
+        log("Aborting chart generation.")
+        exit(1)
+
+    df = clean_dataframe(df)
+
+    if df is None or df.empty:
+        log("No valid data — chart not generated.")
+        exit(1)
+
+    generate_chart(df)
