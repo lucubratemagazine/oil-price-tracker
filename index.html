@@ -2,237 +2,116 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Oil Price Tracker</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- Plotly -->
-    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-
     <style>
-        :root {
-            --bg: #ffffff;
-            --text: #111111;
-            --card-bg: #f5f5f5;
-            --accent: #4da3ff;
-            --eia-color: #4da3ff;
-            --yahoo-color: #ff9933;
-        }
-
-        body.dark {
-            --bg: #111111;
-            --text: #f5f5f5;
-            --card-bg: #1e1e1e;
-            --accent: #4da3ff;
-            --eia-color: #4da3ff;
-            --yahoo-color: #ffb366;
-        }
-
         body {
-            margin: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 800px;
         }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 1.5rem;
-        }
-
-        h1 {
-            margin-top: 0;
-            margin-bottom: 0.5rem;
-        }
-
-        button {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
-        button:hover {
-            opacity: 0.9;
-        }
-
-        .card {
-            background: var(--card-bg);
-            padding: 1rem;
+        #latest {
+            background: #eef6ff;
+            padding: 12px;
             border-radius: 8px;
-            margin: 1rem 0;
+            margin-bottom: 20px;
         }
-
-        #chart {
+        #change30d {
+            font-weight: bold;
+            margin-top: 6px;
+        }
+        img {
             width: 100%;
-            height: 280px;
+            border-radius: 8px;
+            margin-top: 20px;
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 1rem;
-            font-size: 0.85rem;
+            margin-top: 25px;
         }
-
         th, td {
-            padding: 0.35rem 0.5rem;
-            border-bottom: 1px solid #ccc;
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
         }
-
         th {
-            text-align: left;
+            background: #f0f0f0;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>Oil Price Tracker</h1>
-    <button id="toggle-theme">Toggle Dark Mode</button>
 
-    <div class="card">
-        <strong>Latest price:</strong>
-        <span id="latest-price">Loading...</span>
+    <h1>Oil Price Tracker</h1>
+
+    <div id="latest">
+        <p id="latestPrice">Loading latest price...</p>
+        <p id="change30d"></p>
     </div>
 
-    <h2>Interactive Historical Chart</h2>
-    <div id="chart"></div>
+    <h2>Historical Chart</h2>
+    <img src="chart.png" alt="Oil Price Chart">
 
-    <h3>History</h3>
-    <table id="table">
+    <h2>History</h2>
+    <table id="historyTable">
         <thead>
-        <tr>
-            <th>Date</th>
-            <th>EIA Price (USD)</th>
-            <th>Yahoo Price (USD)</th>
-        </tr>
+            <tr>
+                <th>Date</th>
+                <th>EIA Price (USD)</th>
+                <th>Yahoo Price (USD)</th>
+            </tr>
         </thead>
-        <tbody></tbody>
+        <tbody id="historyBody"></tbody>
     </table>
-</div>
 
-<script>
-    // Dark mode toggle
-    const body = document.body;
-    const toggleBtn = document.getElementById("toggle-theme");
+    <script>
+        // Load latest price from CSV
+        fetch("history.csv")
+            .then(r => r.text())
+            .then(text => {
+                const rows = text.trim().split("\n").slice(1);
+                const last = rows[rows.length - 1].split(",");
 
-    if (localStorage.getItem("theme") === "dark") {
-        body.classList.add("dark");
-    }
+                const date = last[0];
+                const eia = last[1];
+                const yahoo = last[2];
 
-    toggleBtn.addEventListener("click", () => {
-        body.classList.toggle("dark");
-        localStorage.setItem("theme", body.classList.contains("dark") ? "dark" : "light");
-    });
+                const price = yahoo !== "NaN" ? yahoo : eia;
 
-    // Format date: "6 Apr 2026"
-    function formatDate(dateStr) {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-            year: "numeric"
-        });
-    }
+                document.getElementById("latestPrice").innerHTML =
+                    `Latest price: <strong>${price} USD</strong> (${date})`;
+            });
 
-    async function loadData() {
-        const response = await fetch("history.csv?cache=" + Date.now());
-        const text = await response.text();
-        const lines = text.trim().split("\n").slice(1); // skip header
+        // Load 30-day change
+        fetch("change30d.txt")
+            .then(r => r.text())
+            .then(val => {
+                const num = parseFloat(val);
+                if (isNaN(num)) return;
 
-        const dates = [];
-        const eiaPrices = [];
-        const yahooPrices = [];
+                const color = num >= 0 ? "green" : "red";
+                document.getElementById("change30d").innerHTML =
+                    `30‑day change: <span style="color:${color}">${num}%</span>`;
+            });
 
-lines.forEach(line => {
-    const [date, eia, yahoo] = line.split(",");
+        // Load history table
+        fetch("history.csv")
+            .then(r => r.text())
+            .then(text => {
+                const rows = text.trim().split("\n").slice(1);
+                const body = document.getElementById("historyBody");
 
-    if (!date || date === "Invalid Date" || isNaN(Date.parse(date))) {
-        return; // skip bad rows
-    }
+                rows.reverse().forEach(row => {
+                    const cols = row.split(",");
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${cols[0]}</td>
+                        <td>${cols[1]}</td>
+                        <td>${cols[2]}</td>
+                    `;
+                    body.appendChild(tr);
+                });
+            });
+    </script>
 
-    const eiaVal = parseFloat(eia);
-    const yahooVal = parseFloat(yahoo);
-
-    if (isNaN(eiaVal) && isNaN(yahooVal)) {
-        return; // skip rows with no usable data
-    }
-
-    dates.push(formatDate(date));
-    eiaPrices.push(eiaVal);
-    yahooPrices.push(yahooVal);
-});
-
-
-        // Latest price (Yahoo is most up-to-date)
-        const latestYahoo = yahooPrices[yahooPrices.length - 1];
-        const latestDate = dates[dates.length - 1];
-
-        document.getElementById("latest-price").textContent =
-            `${latestYahoo.toFixed(2)} USD (${latestDate})`;
-
-        // Fill table (newest first)
-        const tbody = document.querySelector("#table tbody");
-        tbody.innerHTML = "";
-        const reversed = [...lines].reverse();
-
-        reversed.forEach(line => {
-            const [date, eia, yahoo] = line.split(",");
-            const formatted = formatDate(date);
-            const row = `
-                <tr>
-                    <td>${formatted}</td>
-                    <td>${parseFloat(eia).toFixed(2)}</td>
-                    <td>${parseFloat(yahoo).toFixed(2)}</td>
-                </tr>`;
-            tbody.innerHTML += row;
-        });
-
-        // Plotly traces
-        const traceEIA = {
-            x: dates,
-            y: eiaPrices,
-            mode: "lines+markers",
-            name: "EIA (official)",
-            line: { color: "var(--eia-color)", width: 3 }
-        };
-
-        const traceYahoo = {
-            x: dates,
-            y: yahooPrices,
-            mode: "lines+markers",
-            name: "Yahoo Finance (real-time)",
-            line: { color: "var(--yahoo-color)", width: 3 }
-        };
-
-        const layout = {
-            height: 280,
-            margin: { t: 20, r: 20, l: 40, b: 40 },
-            paper_bgcolor: "var(--bg)",
-            plot_bgcolor: "var(--bg)",
-            font: { color: "var(--text)" },
-            xaxis: {
-                type: "category",
-                tickangle: -45,
-                automargin: true
-            }
-        };
-
-        const config = {
-            responsive: true,
-            displaylogo: false
-        };
-
-        Plotly.newPlot("chart", [traceEIA, traceYahoo], layout, config);
-    }
-
-    // Auto-refresh every 60 seconds
-    setInterval(loadData, 60000);
-
-    loadData();
-</script>
 </body>
 </html>
