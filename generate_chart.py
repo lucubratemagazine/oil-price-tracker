@@ -26,17 +26,11 @@ def clean_dataframe(df):
         log("CSV missing required columns — cannot generate chart.")
         return None
 
-    # Convert numeric columns
     df["eia_price"] = pd.to_numeric(df["eia_price"], errors="coerce")
     df["yahoo_price"] = pd.to_numeric(df["yahoo_price"], errors="coerce")
-
-    # Convert date column
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
-    # Drop invalid rows
     df = df.dropna(subset=["date"])
-
-    # Sort by date
     df = df.sort_values("date")
 
     log(f"Cleaned dataframe: {len(df)} valid rows.")
@@ -65,38 +59,58 @@ def generate_chart(df, output="chart.png"):
         line=dict(color="#ff9933", width=3)
     ))
 
+    # Legend at top (Option A)
     fig.update_layout(
         title="Oil Price History",
         xaxis_title="Date",
         yaxis_title="Price (USD)",
         template="plotly_white",
         height=500,
-        margin=dict(l=40, r=20, t=40, b=40)
+        margin=dict(l=40, r=20, t=80, b=40),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.15,
+            xanchor="left",
+            x=0
+        )
     )
+
+    # -----------------------------------------
+    # 30-day change
+    # -----------------------------------------
+    log("Calculating 30-day change...")
+
+    df["price"] = df["yahoo_price"].fillna(df["eia_price"])
+    last_30 = df[df["date"] >= (df["date"].max() - pd.Timedelta(days=30))]
+
+    if len(last_30) > 1:
+        start_price = last_30["price"].iloc[0]
+        end_price = last_30["price"].iloc[-1]
+        pct_change_30d = round((end_price - start_price) / start_price * 100, 2)
+
+        log(f"30-day change: {pct_change_30d}%")
+
+        with open("change30d.txt", "w") as f:
+            f.write(str(pct_change_30d))
+    else:
+        log("Not enough data for 30-day change.")
+        with open("change30d.txt", "w") as f:
+            f.write("NaN")
+
     # -----------------------------------------
     # Detect 5/10/15% changes in last 30 days
     # -----------------------------------------
     log("Calculating percentage change alerts...")
 
-    # Use Yahoo price if available, else EIA
-    df["price"] = df["yahoo_price"].fillna(df["eia_price"])
-
-    # Filter last 30 days
-    last_30 = df[df["date"] >= (df["date"].max() - pd.Timedelta(days=30))]
-
     if len(last_30) > 1:
-        start_price = last_30["price"].iloc[0]
-
-        # Calculate percent change
         last_30["pct_change"] = (last_30["price"] - start_price) / start_price * 100
 
-        # Thresholds: ±5%, ±10%, ±15%, ...
         thresholds = []
         for pct in range(5, 101, 5):
             thresholds.append(pct)
             thresholds.append(-pct)
 
-        # Find crossings
         alerts = []
         for t in thresholds:
             crossed = last_30[last_30["pct_change"] >= t] if t > 0 else last_30[last_30["pct_change"] <= t]
@@ -104,48 +118,6 @@ def generate_chart(df, output="chart.png"):
                 row = crossed.iloc[0]
                 alerts.append((row["date"], row["price"], t))
 
-        # Add markers to chart
         for date, price, pct in alerts:
             fig.add_trace(go.Scatter(
                 x=[date],
-                y=[price],
-                mode="markers+text",
-                text=[f"{pct:+.0f}%"],
-                textposition="top center",
-                marker=dict(size=12, color="red" if pct < 0 else "green"),
-                name=f"{pct:+.0f}% alert"
-            ))
-
-        log(f"Added {len(alerts)} percentage-change alerts.")
-    else:
-        log("Not enough data for 30-day analysis.")
- 
-  #   Save as PNG
-
-    try:
-        pio.write_image(fig, output, width=1000, height=500)
-        log(f"Chart saved as {output}")
-    except Exception as e:
-        log(f"Failed to save chart: {e}")
-
-    # Save as PNG
-    try:
-        pio.write_image(fig, output, width=1000, height=500)
-        log(f"Chart saved as {output}")
-    except Exception as e:
-        log(f"Failed to save chart: {e}")
-
-if __name__ == "__main__":
-    df = load_csv()
-
-    if df is None:
-        log("Aborting chart generation.")
-        exit(1)
-
-    df = clean_dataframe(df)
-
-    if df is None or df.empty:
-        log("No valid data — chart not generated.")
-        exit(1)
-
-    generate_chart(df)
