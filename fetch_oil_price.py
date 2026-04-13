@@ -124,14 +124,14 @@ if __name__ == "__main__":
     while current <= today:
         yahoo_price = yahoo_data.get(current, None)
 
-        # EIA kun for dagens dato
+        # EIA only for today's date
         eia_price = None
         if current == today:
             eia_date, eia_val = fetch_eia_price()
             if eia_date == today:
                 eia_price = eia_val
 
-        # Hvis vi ikke har noen pris i det hele tatt → hopp over datoen
+        # If no price at all → skip the date entirely
         if yahoo_price is None and eia_price is None:
             log(f"No price for {current}, skipping row.")
         else:
