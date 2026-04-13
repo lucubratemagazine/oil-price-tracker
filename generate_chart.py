@@ -31,6 +31,10 @@ def clean_dataframe(df):
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
     df = df.dropna(subset=["date"])
+
+    # ⭐ Fjern rader der både EIA og Yahoo mangler → ingen hull i grafen
+    df = df.dropna(subset=["eia_price", "yahoo_price"], how="all")
+
     df = df.sort_values("date")
 
     log(f"Cleaned dataframe: {len(df)} valid rows.")
@@ -84,7 +88,7 @@ def build_figure(df, theme="plotly_white"):
         height=500,
         margin=dict(l=40, r=20, t=80, b=40),
 
-        # ⭐ STØRRE LEGEND‑TEKST
+        # ⭐ Stor og tydelig legend
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -95,11 +99,11 @@ def build_figure(df, theme="plotly_white"):
             itemsizing="constant"
         ),
 
-        # ⭐ STØRRE AKSETITLER
+        # ⭐ Større aksetekst + skråstilte datoer
         xaxis=dict(
             title_font=dict(size=20),
             tickfont=dict(size=14),
-            tickangle=45   # ← SKRÅSTILTE DATOER
+            tickangle=45
         ),
         yaxis=dict(
             title_font=dict(size=20),
