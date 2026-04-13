@@ -120,22 +120,30 @@ if __name__ == "__main__":
 
     rows_to_add = []
 
-    # Fill missing days
     current = start_date
     while current <= today:
         yahoo_price = yahoo_data.get(current, None)
 
-        if yahoo_price is None:
-            log(f"No Yahoo price for {current}, marking as NaN.")
-            rows_to_add.append([current.isoformat(), "NaN", "NaN"])
+        # EIA kun for dagens dato
+        eia_price = None
+        if current == today:
+            eia_date, eia_val = fetch_eia_price()
+            if eia_date == today:
+                eia_price = eia_val
+
+        # Hvis vi ikke har noen pris i det hele tatt → hopp over datoen
+        if yahoo_price is None and eia_price is None:
+            log(f"No price for {current}, skipping row.")
         else:
-            rows_to_add.append([current.isoformat(), "NaN", yahoo_price])
+            rows_to_add.append([
+                current.isoformat(),
+                eia_price if eia_price is not None else "NaN",
+                yahoo_price if yahoo_price is not None else "NaN"
+            ])
 
         current += timedelta(days=1)
 
-    # Fetch today's EIA price and overwrite today's EIA column
-    eia_date, eia_price = fetch_eia_price()
-    if eia_date == today and rows_to_add:
-        rows_to_add[-1][1] = eia_price
-
-    append_rows(rows_to_add)
+    if rows_to_add:
+        append_rows(rows_to_add)
+    else:
+        log("No new rows to add.")
