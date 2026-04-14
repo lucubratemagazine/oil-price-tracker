@@ -137,8 +137,8 @@ if __name__ == "__main__":
         else:
             rows_to_add.append([
                 current.isoformat(),
-                eia_price if eia_price is not None else "NaN",
-                yahoo_price if yahoo_price is not None else "NaN"
+                eia_price if eia_price is not None else "",
+                yahoo_price if yahoo_price is not None else ""
             ])
 
         current += timedelta(days=1)
