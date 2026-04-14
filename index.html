@@ -136,11 +136,13 @@
                     const eia = parseFloat(cols[1]);
                     const yahoo = parseFloat(cols[2]);
 
+                    if (isNaN(eia) && isNaN(yahoo)) return;
+
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
                         <td>${date}</td>
-                        <td>${!isNaN(eia) ? eia.toFixed(2) : "NaN"}</td>
-                        <td>${!isNaN(yahoo) ? yahoo.toFixed(2) : "NaN"}</td>
+                        <td>${!isNaN(eia) ? eia.toFixed(2) : "–"}</td>
+                        <td>${!isNaN(yahoo) ? yahoo.toFixed(2) : "–"}</td>
                     `;
                     body.appendChild(tr);
                 });
