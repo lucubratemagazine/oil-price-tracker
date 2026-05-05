@@ -127,7 +127,7 @@ def fetch_eia_range(days=EIA_FETCH_DAYS):
     try:
         payload = response.json()
     except ValueError as e:
-        log(f"EIA response is not valid JSON: {e}")
+        log(f"EIA response is not valid JSON: {type(e).__name__}")
         return {}
 
     response_body = payload.get("response")
@@ -147,7 +147,7 @@ def fetch_eia_range(days=EIA_FETCH_DAYS):
             price = float(record["value"])
             result[date] = price
         except (KeyError, ValueError, TypeError) as e:
-            log(f"Skipping malformed EIA record {record}: {e}")
+            log(f"Skipping malformed EIA record (period={record.get('period', '?')}): {type(e).__name__}")
 
     log(f"EIA returned {len(result)} price records.")
     return result
