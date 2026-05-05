@@ -15,9 +15,13 @@ EIA_BASE_URL = (
 # Number of recent EIA days to fetch (covers new rows + backfills lagged values)
 EIA_FETCH_DAYS = 120
 
+# Column indices within each records dict value [eia_str, yahoo_str]
+_EIA_IDX = 0
+_YAHOO_IDX = 1
 
-def log(msg):
-    print(f"[INFO] {msg}")
+
+def log(text):
+    print(f"[INFO] {text}")
 
 
 # ---------------------------------------------------
@@ -53,7 +57,9 @@ def load_existing_csv(filename="history.csv"):
                 log(f"Skipping invalid date row: {row}")
                 continue
             records[date_str] = [eia_str, yahoo_str]
-            last_date = date_str
+            # Track the chronologically latest date (not just file order)
+            if last_date is None or date_str > last_date:
+                last_date = date_str
 
     if last_date is None:
         log("CSV only contains header — no previous data.")
@@ -157,8 +163,8 @@ def write_csv(records, filename="history.csv"):
         writer = csv.writer(f)
         writer.writerow(["date", "eia_price", "yahoo_price"])
         for date_str in sorted_dates:
-            eia_str, yahoo_str = records[date_str]
-            writer.writerow([date_str, eia_str, yahoo_str])
+            vals = records[date_str]
+            writer.writerow([date_str, vals[_EIA_IDX], vals[_YAHOO_IDX]])
     log(f"Wrote {len(sorted_dates)} rows to {filename}.")
 
 
@@ -187,11 +193,11 @@ if __name__ == "__main__":
 
     # Backfill EIA into existing rows that currently have a blank EIA value
     backfilled = 0
-    for date_str, (eia_str, yahoo_str) in existing_records.items():
-        if eia_str == "":
+    for date_str, vals in existing_records.items():
+        if vals[_EIA_IDX] == "":
             date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
             if date_obj in eia_data:
-                existing_records[date_str][0] = str(eia_data[date_obj])
+                vals[_EIA_IDX] = str(eia_data[date_obj])
                 backfilled += 1
     if backfilled:
         log(f"Backfilled EIA values for {backfilled} existing row(s).")
@@ -207,10 +213,9 @@ if __name__ == "__main__":
             log(f"No price for {current}, skipping row.")
         else:
             date_str = current.isoformat()
-            existing_records[date_str] = [
-                str(eia_price) if eia_price is not None else "",
-                str(yahoo_price) if yahoo_price is not None else "",
-            ]
+            existing_records[date_str] = ["", ""]
+            existing_records[date_str][_EIA_IDX] = str(eia_price) if eia_price is not None else ""
+            existing_records[date_str][_YAHOO_IDX] = str(yahoo_price) if yahoo_price is not None else ""
             new_rows += 1
 
         current += timedelta(days=1)
