@@ -111,13 +111,13 @@ def fetch_eia_range(days=EIA_FETCH_DAYS):
         log("EIA_API_KEY not set — skipping EIA fetch.")
         return {}
 
-    url = f"{EIA_BASE_URL}&length={days}&api_key={api_key}"
+    url = f"{EIA_BASE_URL}&length={days}"
     log(f"Fetching EIA price range (last {days} days)...")
 
     try:
-        response = requests.get(url, timeout=15)
+        response = requests.get(url, params={"api_key": api_key}, timeout=15)
     except requests.RequestException as e:
-        log(f"EIA request failed: {e}")
+        log(f"EIA request failed: {type(e).__name__}")
         return {}
 
     if response.status_code != 200:
@@ -213,9 +213,10 @@ if __name__ == "__main__":
             log(f"No price for {current}, skipping row.")
         else:
             date_str = current.isoformat()
-            existing_records[date_str] = ["", ""]
-            existing_records[date_str][_EIA_IDX] = str(eia_price) if eia_price is not None else ""
-            existing_records[date_str][_YAHOO_IDX] = str(yahoo_price) if yahoo_price is not None else ""
+            existing_records[date_str] = [
+                str(eia_price) if eia_price is not None else "",
+                str(yahoo_price) if yahoo_price is not None else "",
+            ]
             new_rows += 1
 
         current += timedelta(days=1)
