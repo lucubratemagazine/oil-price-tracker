@@ -27,6 +27,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Fetch oil price data
+        env:
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
         run: |
           echo "📡 Fetching oil price data..."
           python fetch_oil_price.py
