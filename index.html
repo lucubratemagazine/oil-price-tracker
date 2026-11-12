@@ -74,8 +74,8 @@
     <h1>Oil Price Tracker</h1>
 
     <div id="latest">
-        <p id="latestPrice">Loading latest price...</p>
-        <p id="change30d"></p>
+        <p id="latestPrice">Loading latest price…</p>
+        <p id="change30d">Loading 30&#8209;day change…</p>
     </div>
 
     <h2>Historical Chart</h2>
@@ -94,56 +94,97 @@
     </table>
 
     <script>
-        // Load latest price
+        // Load history.csv once — used for both latest price and history table
         fetch("history.csv")
-            .then(r => r.text())
+            .then(r => {
+                if (!r.ok) throw new Error("HTTP " + r.status);
+                return r.text();
+            })
             .then(text => {
-                const rows = text.trim().split("\n").slice(1);
-                const last = rows[rows.length - 1].split(",");
+                const rows = text.trim().split("\n")
+                    .slice(1)                        // skip header
+                    .filter(l => l.trim() !== "");   // ignore blank lines
 
-                const date = last[0];
-                const eia = parseFloat(last[1]);
-                const yahoo = parseFloat(last[2]);
+                // --- Latest price ---
+                if (rows.length === 0) {
+                    document.getElementById("latestPrice").textContent =
+                        "Latest price: Data unavailable";
+                } else {
+                    const last = rows[rows.length - 1].split(",");
+                    const date = (last[0] || "").trim();
+                    const eia  = parseFloat(last[1]);
+                    const yahoo = parseFloat(last[2]);
 
-                const price = !isNaN(yahoo) ? yahoo.toFixed(2) : eia.toFixed(2);
+                    let price = null;
+                    if (!isNaN(yahoo))     price = yahoo.toFixed(2);
+                    else if (!isNaN(eia))  price = eia.toFixed(2);
 
-                document.getElementById("latestPrice").innerHTML =
-                    `Latest price: <strong>${price} USD</strong> (${date})`;
+                    if (price && date) {
+                        document.getElementById("latestPrice").innerHTML =
+                            `Latest price: <strong>${price} USD</strong> (${date})`;
+                    } else {
+                        document.getElementById("latestPrice").textContent =
+                            "Latest price: Data unavailable";
+                    }
+                }
+
+                // --- History table ---
+                const body = document.getElementById("historyBody");
+                if (rows.length === 0) {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML =
+                        `<td colspan="3" style="text-align:center;color:#888;">No history data available.</td>`;
+                    body.appendChild(tr);
+                } else {
+                    rows.slice().reverse().forEach(row => {
+                        const cols  = row.split(",");
+                        const date  = (cols[0] || "").trim();
+                        const eia   = parseFloat(cols[1]);
+                        const yahoo = parseFloat(cols[2]);
+
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td>${date || "—"}</td>
+                            <td>${!isNaN(eia)   ? eia.toFixed(2)   : "Data unavailable"}</td>
+                            <td>${!isNaN(yahoo) ? yahoo.toFixed(2) : "Data unavailable"}</td>
+                        `;
+                        body.appendChild(tr);
+                    });
+                }
+            })
+            .catch(err => {
+                document.getElementById("latestPrice").textContent =
+                    "Latest price: Data unavailable";
+                const body = document.getElementById("historyBody");
+                const tr = document.createElement("tr");
+                const msg = err && err.message === "HTTP 404"
+                    ? "history.csv was not found. Please add the file and push."
+                    : "Could not load price history. Please ensure history.csv is present and valid.";
+                tr.innerHTML =
+                    `<td colspan="3" style="text-align:center;color:#c00;">${msg}</td>`;
+                body.appendChild(tr);
             });
 
         // Load 30-day change
         fetch("change30d.txt")
-            .then(r => r.text())
+            .then(r => {
+                if (!r.ok) throw new Error("HTTP " + r.status);
+                return r.text();
+            })
             .then(val => {
                 const num = parseFloat(val);
-                if (isNaN(num)) return;
-
+                if (isNaN(num)) {
+                    document.getElementById("change30d").textContent =
+                        "30\u2011day change: Data unavailable";
+                    return;
+                }
                 const color = num >= 0 ? "green" : "red";
                 document.getElementById("change30d").innerHTML =
-                    `30‑day change: <span style="color:${color}">${num.toFixed(2)}%</span>`;
-            });
-
-        // Load history table
-        fetch("history.csv")
-            .then(r => r.text())
-            .then(text => {
-                const rows = text.trim().split("\n").slice(1);
-                const body = document.getElementById("historyBody");
-
-                rows.reverse().forEach(row => {
-                    const cols = row.split(",");
-                    const date = cols[0];
-                    const eia = parseFloat(cols[1]);
-                    const yahoo = parseFloat(cols[2]);
-
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td>${date}</td>
-                        <td>${!isNaN(eia) ? eia.toFixed(2) : "NaN"}</td>
-                        <td>${!isNaN(yahoo) ? yahoo.toFixed(2) : "NaN"}</td>
-                    `;
-                    body.appendChild(tr);
-                });
+                    `30\u2011day change: <span style="color:${color}">${num.toFixed(2)}%</span>`;
+            })
+            .catch(() => {
+                document.getElementById("change30d").textContent =
+                    "30\u2011day change: Data unavailable";
             });
 
         // THEME SWITCHER

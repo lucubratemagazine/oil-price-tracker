@@ -81,7 +81,7 @@ def build_figure(df, theme="plotly_white"):
     ))
 
     fig.update_layout(
-        title="Oil Price History",
+        title=dict(text="Oil Price History", font=dict(size=26)),
         xaxis_title="Date",
         yaxis_title="Price (USD)",
         template=theme,
@@ -95,19 +95,19 @@ def build_figure(df, theme="plotly_white"):
             y=1.18,
             xanchor="left",
             x=0,
-            font=dict(size=22),
+            font=dict(size=26),
             itemsizing="constant"
         ),
 
         # ⭐ Større aksetekst + skråstilte datoer
         xaxis=dict(
-            title_font=dict(size=20),
-            tickfont=dict(size=14),
+            title_font=dict(size=24),
+            tickfont=dict(size=16),
             tickangle=45
         ),
         yaxis=dict(
-            title_font=dict(size=20),
-            tickfont=dict(size=14)
+            title_font=dict(size=24),
+            tickfont=dict(size=16)
         )
     )
 
